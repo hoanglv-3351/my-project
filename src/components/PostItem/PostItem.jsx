@@ -3,19 +3,20 @@ import { AVATAR } from '../../ImageList'
 import Avatar from "@mui/material/Avatar"
 import "./Style-PostItem.css"
 
-export default function PostItem() {
+export default function PostItem(props) {
+  const { data } = props
   return (
     <div className="post__container">
         {/* Header -> username + avatar + local */}
         <div className="post__header">
             <div className="post__header--block-left">
                 <div className="post__header--avatar">
-                    <Avatar alt="" src={AVATAR} /> 
+                    <Avatar alt="" src={data.avatarUrl} /> 
                 </div>
             </div>
-                <div className="post__header--username">
-                    <a href="#">Hoang</a>
-                </div>
+            <div className="post__header--username">
+                <a href="#">{data.userName}</a>
+            </div>
             <div className="post__item--block-right">
                 <div className="post__header--more-option">
                     <span>
@@ -26,7 +27,7 @@ export default function PostItem() {
         </div>
         {/* image  */}
         <div className="post__image">
-            <img src={AVATAR} alt="p-1" />
+            <img src={data.imageUrl} alt="p-1" />
         </div>
 
         <div className="post__group-bottom">
@@ -60,15 +61,10 @@ export default function PostItem() {
         <div className="post__caption">
           <div className="post__caption--user">
             <span className="user-name">
-              <a href="/#">Hoang</a>
+              <a href="/#">{data.userName}</a>
             </span>
             &nbsp;
-            <span className="caption">
-              "Don't feel better than anybody, because you feel like something.
-              Always have it at the back of your mind that you were nothing
-              before you became something, and that thing you supposed to be is
-              absolutely nothing."
-            </span>
+            <span dangerouslySetInnerHTML={{__html: data.caption}} className="caption"></span>
           </div>
           {/* Time */}
           <p className="post__caption--time"><span>1</span> Ngày trước</p>
