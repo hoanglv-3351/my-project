@@ -1,3 +1,15 @@
 body {
     background-color: #fafafa;
 }
+
+a {
+    text-decoration: none;
+}
+
+.Post__list {
+    margin-top: 5rem;
+    margin-left: 5rem;
+    max-width: 614px;
+    width: 100%;
+    margin-right: 28px;
+}

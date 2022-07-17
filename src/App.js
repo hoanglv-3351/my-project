@@ -1,6 +1,8 @@
 import React from 'react';
-import './App.css';
 import Header from './components/Header/Header';
+import PostItem from './components/PostItem/PostItem';
+import './App.css';
+// import PostItem from './components/PostItem/PostItem';
 
 function App() {
   return (
@@ -8,8 +10,12 @@ function App() {
       <Header />
         {/* CSS */}
         {/* https://boxicons.com/usage#import-css */}
-        {/* <Content /> */}
-        {/* <Footer /> */}
+
+      {/* <PostItem /> */}
+      <div className="Post__list">
+        <PostItem />
+      </div>
+      {/* <Footer /> */}
     </div>
   );
 }
