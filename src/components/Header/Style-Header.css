@@ -70,3 +70,18 @@
 .btn-login:hover {
     opacity: 0.8;
 }
+
+.btn-upload:hover {
+	background-color: #fff !important;
+}
+
+.bx-message-square-add {
+	font-size: 1.45rem;
+	font-weight: 500;
+	transition: all 0.5s ease;
+}
+
+.bx-message-square-add:hover {
+	opacity: 0.8;
+	text-shadow: 2px 4px 3px rgba(0,0,0,0.3);
+}
