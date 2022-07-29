@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import Header from './components/Header/Header';
 import PostItem from './components/PostItem/PostItem';
-import { db, auth, createUserWithEmailAndPassword, signInWithEmailAndPassword, firebaseApp } from './firebaseConfig'
-import { collection, getDocs } from 'firebase/firestore'
+import {
+	db, auth, createUserWithEmailAndPassword,
+	signInWithEmailAndPassword, storage, ref,
+	uploadBytesResumable, getDownloadURL
+} from './firebaseConfig'
+import { collection, getDocs, addDoc } from 'firebase/firestore'
 import { makeStyles } from "@material-ui/core/styles";
 import Modal from "@mui/material/Modal";
 import { Button, Input } from '@mui/material';
 import { updateProfile } from "firebase/auth"
+import { v4 } from 'uuid'
 
 import './App.css';
 
@@ -77,12 +82,15 @@ function App() {
 	};
 
 	const handleUpload = () => {
-		const uploadTask = localStorage.ref(`images/${image.name}`).put(image);
+		const imageRef = ref(storage, `images/${image.name + v4()}`)
+
+		var uploadTask = uploadBytesResumable(imageRef, image, image)
 
 		uploadTask.on(
 			"state_changed",
 			(snapshot) => {
 				//progress function
+				setOpenModalUpload(false)
 				const progress = Math.round(
 					(snapshot.bytesTransferred / snapshot.totalBytes) * 100
 				);
@@ -94,20 +102,21 @@ function App() {
 			},
 			() => {
 				//handle when complete
-				localStorage.ref("images").child(image.name).getDownloadURL().then(
+				getDownloadURL(imageRef).then(
 					url => {
 						//Save link image in db of firebase
-						db.collection('posts').add(
+						addDoc(collection(db, 'posts'),
 							{
-								timestamp: firebaseApp.firestore.FieldValue.serverTimestamp(),
+								// timestamp: firebase.firestore.FieldValue.serverTimestamp(),
 								caption: caption,
 								imageUrl: url,
 								userName: username
 							}
 						);
-						setProgress(0);
-						setCaption('');
-						setImage(null);
+						// setProgress(0);
+						// setCaption('');
+						// setImage(null);
+						console.log(url)
 					}
 				);
 			}
@@ -252,7 +261,8 @@ function App() {
 							<input
 								className="form__field"
 								type="file"
-								onChange={handleChangeFile}
+								id='photo'
+								onChange={(event) => { setImage(event.target.files[0]) }}
 							/>
 						</div>
 						<Button className="btn-signup" onClick={handleUpload}>
