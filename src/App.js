@@ -6,7 +6,7 @@ import {
 	signInWithEmailAndPassword, storage, ref,
 	uploadBytesResumable, getDownloadURL
 } from './firebaseConfig'
-import { collection, getDocs, addDoc } from 'firebase/firestore'
+import { collection, getDocs, addDoc, Timestamp } from 'firebase/firestore'
 import { makeStyles } from "@material-ui/core/styles";
 import Modal from "@mui/material/Modal";
 import { Button, Input } from '@mui/material';
@@ -107,7 +107,7 @@ function App() {
 						//Save link image in db of firebase
 						addDoc(collection(db, 'posts'),
 							{
-								// timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+								timestamp: Timestamp.now(),
 								caption: caption,
 								imageUrl: url,
 								userName: username
@@ -186,7 +186,7 @@ function App() {
 			<div className="Post__list">
 				{
 					posts.map(({ id, post }) => (
-						<PostItem key={id} data={post} />
+						<PostItem key={id} data={post} user={user} postId={id} />
 					))
 				}
 			</div>
