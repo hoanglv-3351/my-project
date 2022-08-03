@@ -7,7 +7,7 @@
     background-color: #fff;
 }
 
-.post__header {
+.post__header{
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -182,3 +182,25 @@
     font-weight: 400;
     color: rgb(85, 85, 85);
 }  */
+
+.btn-liked {
+    color: red !important;
+}
+
+.btn-unliked {
+    color: black !important
+}
+
+.follower-item{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #efefef;
+}
+
+.follower_user-name{
+    color: #262626;
+    font-weight: 600;
+    padding-right: 20px;
+}

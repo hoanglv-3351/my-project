@@ -13,3 +13,12 @@ a {
     width: 100%;
     margin-right: 28px;
 }
+
+.guest-homepage {
+    /* margin-top: 54px; */
+    height: 100vh;
+    background-color: aqua;
+    background-image: url('./assets/avatar/background-img.jpeg');
+    background-repeat: no-repeat;
+    background-size: cover;
+}

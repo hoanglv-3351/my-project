@@ -6,7 +6,7 @@ import {
 	signInWithEmailAndPassword, storage, ref,
 	uploadBytesResumable, getDownloadURL
 } from './firebaseConfig'
-import { collection, getDocs, addDoc, Timestamp } from 'firebase/firestore'
+import { collection, getDocs, addDoc, Timestamp, doc, setDoc } from 'firebase/firestore'
 import { makeStyles } from "@material-ui/core/styles";
 import Modal from "@mui/material/Modal";
 import { Button, Input } from '@mui/material';
@@ -54,15 +54,21 @@ function App() {
 	const [progress, setProgress] = useState(0);
 	const [caption, setCaption] = useState("");
 
+
 	const getData = async () => {
 		const postsCol = collection(db, 'posts');
 		const snapshot = await getDocs(postsCol);
 		setPosts(
-			snapshot.docs.map(doc => ({
-				id: doc.id,
-				post: doc.data()
-			}))
+			snapshot.docs.map(doc => {
+				
+				console.log(doc.data())
+				return {
+					id: doc.id,
+					post: doc.data()
+				}
+			})
 		)
+
 	}
 
 	const handleClickSignUp = (childData) => {
@@ -107,15 +113,15 @@ function App() {
 						//Save link image in db of firebase
 						addDoc(collection(db, 'posts'),
 							{
-								timestamp: Timestamp.now(),
+								// timestamp: Timestamp.now(),
 								caption: caption,
 								imageUrl: url,
-								userName: username
-							}
-						);
-						// setProgress(0);
-						// setCaption('');
-						// setImage(null);
+								userName: username,
+								user_id: user.uid
+							})
+						setProgress(0);
+						setCaption('');
+						setImage(null);
 						console.log(url)
 					}
 				);
@@ -133,11 +139,33 @@ function App() {
 	}
 
 	const handleSignUp = (event) => {
-		createUserWithEmailAndPassword(auth, email, password).then((authUser) => {
-			return authUser.user.updateProfile({
+		createUserWithEmailAndPassword(auth, email, password)
+		.then((authUser) => {
+			console.log(authUser)
+			const newUser = authUser.user;
+			
+			// add to table users
+			try {
+				setDoc(doc(db, "users", newUser.uid), {
+					id: newUser.uid,
+					nickname: username,
+					avatarUrl: ""
+				})
+			} catch (err) {
+				console.log(err);
+			}
+
+			alert("Sign up successfully!")
+			updateProfile(authUser, {
 				displayName: username
-			});
-		}).catch((error) => alert(error.message));
+			}).then((res) => {
+				console.log(res)
+			})
+			console.log(authUser.user.displayName)
+		})
+		.catch((error) => {
+			console.log(error)
+		});
 		setOpenModal(false);
 	}
 
@@ -183,24 +211,31 @@ function App() {
 		<div className="App">
 			<Header takeMessSignUp={handleClickSignUp} takeMessLogOut={handleClickLogOut} takeMessLogIn={handleClickSignIn} takeMessAddNewPost={handleClickAddNewPost} user={user} />
 
-			<div className="Post__list">
-				{
-					posts.map(({ id, post }) => (
-						<PostItem key={id} data={post} user={user} postId={id} />
-					))
-				}
-			</div>
+			{user ? (
+				<div className="Post__list">
+					{
+						posts.map(({ id, post }) => (
+							// nhan id user trong data
+							<PostItem key={id} data={post} user={user} postId={id} />
+						))
+					}
+				</div>) : (
+					<div className='guest-homepage'>
+						
+					</div>
+				)
+			}
 
 			{/* sign up */}
 			<Modal open={openModal} onClose={() => setOpenModal(false)}>
-				<div style={modalStyle} class="popup" className={classes.paper} >
+				<div style={modalStyle} className="popup" className={classes.paper} >
 					<form className="form__signup">
 						<img className="form__logo"
 							src="https://www.instagram.com/static/images/web/mobile_nav_type_logo.png/735145cfe0a4.png"
 							alt="Logo"
 						/>
 						<div className="form__group">
-							<label class="popup-label">User name:</label><br />
+							<label className="popup-label">User name:</label><br />
 							<Input className="form__field" placeholder="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)} />
 						</div>
 						<div className="form__group">
@@ -218,7 +253,7 @@ function App() {
 
 			{/* sign in */}
 			<Modal open={openSignInModal} onClose={() => setOpenSignInModal(false)}>
-				<div style={modalStyle} class="popup" className={classes.paper} >
+				<div style={modalStyle} className="popup" className={classes.paper} >
 					<form className="form__signup">
 						<img className="form__logo"
 							src="https://www.instagram.com/static/images/web/mobile_nav_type_logo.png/735145cfe0a4.png"
