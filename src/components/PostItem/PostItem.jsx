@@ -7,9 +7,18 @@ import "./Style-PostItem.css"
 import { doc, setDoc, addDoc, collection, getDoc, getDocs, deleteDoc, orderBy, query, Timestamp } from 'firebase/firestore';
 import { makeStyles } from "@material-ui/core/styles";
 import Modal from "@mui/material/Modal";
-import { Button } from '@mui/material';
+import { Button, Menu, MenuItem } from '@mui/material';
 
 export default function PostItem(props) {
+
+  const [anchorEl, setAnchorEl] = React.useState(null);
+  const open = Boolean(anchorEl);
+  const handleClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
 
   const [comments, setComments] = useState([]);
   const [comment, setComment] = useState("");
@@ -139,6 +148,21 @@ export default function PostItem(props) {
     setOpenModalFollowers(true)
   }
 
+  const handleClickDeletePost = () => {
+    console.log(props.postId)
+    if (window.confirm('Are you sure you want to delete this post?')) {
+      // OK
+      handleDeletePost(props.postId)
+      console.log('Post deleted!');
+    }
+  }
+
+  const handleDeletePost = (postId) => {
+    deleteDoc(doc(db, "posts", postId));
+    alert('Post deleted!')
+    handleClose()
+  }
+
   return (
     <div className="post__container">
       {/* Header -> username + avatar + local */}
@@ -154,7 +178,31 @@ export default function PostItem(props) {
         <div className="post__item--block-right">
           <div className="post__header--more-option">
             <span>
-              <i className="bx bx-dots-horizontal-rounded"></i>
+              <i
+                className="bx bx-dots-horizontal-rounded"
+                aria-controls={open ? 'demo-positioned-menu' : undefined}
+                aria-haspopup="true"
+                aria-expanded={open ? 'true' : undefined}
+                onClick={handleClick}
+              ></i>
+              <Menu
+                aria-labelledby="demo-positioned-button"
+                anchorEl={anchorEl}
+                open={open}
+                onClose={handleClose}
+                anchorOrigin={{
+                  vertical: 'top',
+                  horizontal: 'left',
+                }}
+                transformOrigin={{
+                  vertical: 'top',
+                  horizontal: 'left',
+                }}
+              >
+                <MenuItem onClick={handleClickDeletePost}>Xoá</MenuItem>
+                <MenuItem onClick={handleClose}>Chỉnh sửa quyền riêng tư</MenuItem>
+                {/* <MenuItem onClick={handleClose}></MenuItem> */}
+              </Menu>
             </span>
           </div>
         </div>
@@ -246,14 +294,14 @@ export default function PostItem(props) {
       {/* show followers */}
       <Modal open={openModalFollowers} onClose={() => setOpenModalFollowers(false)}>
         <div style={modalStyle} className={classes.paper}>
-          {followers.map(( fl ) => (
-              <div key={fl.id} className="follower-item">
-                <Avatar alt="" src={fl.avatarUrl} />
-                <a href='#' className="follower_user-name">{fl.nickname}</a>
-                <Button className='btn-add-friend'>Add friend</Button>
-                <hr />
-              </div>
-            ))}
+          {followers.map((fl) => (
+            <div key={fl.id} className="follower-item">
+              <Avatar alt="" src={fl.avatarUrl} />
+              <a href='#' className="follower_user-name">{fl.nickname}</a>
+              <Button className='btn-add-friend'>Add friend</Button>
+              <hr />
+            </div>
+          ))}
 
         </div>
       </Modal>
