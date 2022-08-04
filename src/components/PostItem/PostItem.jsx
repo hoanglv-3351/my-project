@@ -4,7 +4,7 @@ import { db } from '../../firebaseConfig'
 // import { AVATAR } from '../../ImageList'
 import Avatar from "@mui/material/Avatar"
 import "./Style-PostItem.css"
-import { doc, setDoc, addDoc, collection, getDoc, getDocs, deleteDoc, orderBy, query, Timestamp } from 'firebase/firestore';
+import { onSnapshot, doc, setDoc, addDoc, collection, getDoc, getDocs, deleteDoc, orderBy, query, Timestamp } from 'firebase/firestore';
 import { makeStyles } from "@material-ui/core/styles";
 import Modal from "@mui/material/Modal";
 import { Button, Menu, MenuItem } from '@mui/material';
@@ -55,53 +55,7 @@ export default function PostItem(props) {
 
   const { data } = props
 
-  const getDataAuthor = () => {
-    var docRef = doc(db, "users", data.user_id)
-
-    getDoc(docRef).then((docSnap) => {
-      if (docSnap.exists()) {
-        setAuthor(docSnap.data())
-      }
-    })
-  }
-
   const [state, setState] = useState(false) // state like post
-
-  const getData = async () => {
-    const postsCol = collection(db, `posts/${props.postId}/comments`)
-    const snapshot = await getDocs(postsCol);
-
-    setComments(
-      snapshot.docs.map((doc) => ({
-        id: doc.id,
-        cmt: doc.data(),
-      }))
-    );
-  }
-
-  const getDataFollowers = async () => {
-    const postsCol = collection(db, `posts/${props.postId}/followers`)
-    const snapshot = await getDocs(postsCol);
-
-    //check if liked post
-    var docRef = doc(db, `posts/${props.postId}/followers`, props.user.uid)
-
-    getDoc(docRef).then((docSnap) => {
-      if (docSnap.exists()) {
-        // liked
-        setState(true)
-      }
-    })
-
-    snapshot.docs.map((res) => {
-      var resRef = doc(db, "users", res.data().user_id)
-      getDoc(resRef).then((resSnap) => {
-        if (resSnap.exists()) {
-          setFollowers(followers => [...followers, resSnap.data()])
-        }
-      })
-    })
-  }
 
   const submitComment = (e) => {
     // e.preventDefault();
@@ -114,17 +68,91 @@ export default function PostItem(props) {
     setComment("");
   };
 
+  // get post author
   useEffect(() => {
     if (props.postId) {
-      getData();
-      getDataFollowers();
-      getDataAuthor();
+      let docRef = doc(db, "users", data.user_id)
+      getDoc(docRef).then((docSnap) => {
+        if (docSnap.exists()) {
+          setAuthor(docSnap.data())
+        }
+      })
     }
   }, [props.postId]);
 
+  // get followers
+  useEffect(async () => {
+    const postsCol = collection(db, `posts/${props.postId}/followers`)
+    const snapshot = await getDocs(postsCol);
+
+    //check if liked post
+    let docRef = doc(db, `posts/${props.postId}/followers`, props.user.uid)
+
+    getDoc(docRef).then((docSnap) => {
+      if (docSnap.exists()) {
+        // liked
+        setState(true)
+      }
+    })
+
+    // snapshot.docs.map((res) => {
+      // let resRef = doc(db, "users", res.data().user_id)
+      // getDoc(resRef).then((resSnap) => {
+      //   if (resSnap.exists()) {
+      //     setFollowers(followers => [...followers, resSnap.data()])
+      //   }
+      // })
+    // })
+
+    const unsub = onSnapshot(
+			collection(db, `posts/${props.postId}/followers`), 
+			(snapshot) => {
+				snapshot.docs.forEach((snapDoc) => {
+					
+          let resRef = doc(db, "users", snapDoc.data().user_id)
+          getDoc(resRef).then((resSnap) => {
+            if (resSnap.exists()) {
+              setFollowers(followers => [...followers, resSnap.data()])
+            }
+      })
+				})
+				setFollowers(followers)
+			},
+			(error) => {
+				console.log(error)
+			}
+		);
+    return () => {
+      unsub()
+    }
+  }, [props.postId])
+
+  // get comment
+  useEffect(() => {
+    const unsub = onSnapshot(
+			collection(db, `posts/${props.postId}/comments`), 
+			(snapshot) => {
+				let commentList = [];
+				snapshot.docs.forEach((doc) => {
+					commentList.push({
+						id:doc.id,
+						cmt: doc.data()
+					})
+				})
+				setComments(commentList)
+			},
+			(error) => {
+				console.log(error)
+			}
+		);
+    return () => {
+      unsub()
+    }
+  }, [props.postId])
+
   const handleLikePost = () => {
     // logic
-    var docRef = doc(db, `posts/${props.postId}/followers`, props.user.uid)
+    let docRef = doc(db, `posts/${props.postId}/followers`, props.user.uid)
     getDoc(docRef).then((docSnap) => {
       if (docSnap.exists()) {
         // delete
@@ -134,7 +162,6 @@ export default function PostItem(props) {
       else {
         // add like
         setState(true)
-        setFollower(props.user.uid)
         setDoc(doc(db, `posts/${props.postId}/followers`, props.user.uid),
           {
             user_id: props.user.uid,
@@ -146,21 +173,20 @@ export default function PostItem(props) {
 
   const handleShowFollowers = () => {
     setOpenModalFollowers(true)
+    // console.log(data.timestamp.toDate().toDateString())
   }
 
   const handleClickDeletePost = () => {
-    console.log(props.postId)
-    if (window.confirm('Are you sure you want to delete this post?')) {
+    handleClose()
+    if (window.confirm('Bạn có chắc muốn xoá bài viết này?')) {
       // OK
       handleDeletePost(props.postId)
-      console.log('Post deleted!');
     }
   }
 
   const handleDeletePost = (postId) => {
     deleteDoc(doc(db, "posts", postId));
-    alert('Post deleted!')
-    handleClose()
+    alert('Đã xoá bài viết!')
   }
 
   return (
@@ -250,6 +276,8 @@ export default function PostItem(props) {
           </div>
           {/* Time */}
           <p className="post__caption--time"><span>1</span> Ngày trước</p>
+          {/* <p className="post__caption--time"><span>{data.timestamp.toDate().toDateString()}</span></p> */}
+
         </div>
 
         {/* list comment */}
@@ -309,3 +337,4 @@ export default function PostItem(props) {
     </div>
   )
 }
+

@@ -6,7 +6,7 @@ import {
 	signInWithEmailAndPassword, storage, ref,
 	uploadBytesResumable, getDownloadURL
 } from './firebaseConfig'
-import { collection, getDocs, addDoc, Timestamp, doc, setDoc } from 'firebase/firestore'
+import { collection, getDocs, addDoc, Timestamp, doc, setDoc, onSnapshot } from 'firebase/firestore'
 import { makeStyles } from "@material-ui/core/styles";
 import Modal from "@mui/material/Modal";
 import { Button, Input } from '@mui/material';
@@ -54,23 +54,6 @@ function App() {
 	const [progress, setProgress] = useState(0);
 	const [caption, setCaption] = useState("");
 
-
-	const getData = async () => {
-		const postsCol = collection(db, 'posts');
-		const snapshot = await getDocs(postsCol);
-		setPosts(
-			snapshot.docs.map(doc => {
-				
-				console.log(doc.data())
-				return {
-					id: doc.id,
-					post: doc.data()
-				}
-			})
-		)
-
-	}
-
 	const handleClickSignUp = (childData) => {
 		setOpenModal(childData);
 	}
@@ -83,14 +66,10 @@ function App() {
 		setOpenModalUpload(childData);
 	};
 
-	const handleChangeFile = (childData) => {
-		setOpenModalUpload(childData);
-	};
-
 	const handleUpload = () => {
 		const imageRef = ref(storage, `images/${image.name + v4()}`)
 
-		var uploadTask = uploadBytesResumable(imageRef, image, image)
+		let uploadTask = uploadBytesResumable(imageRef, image, image)
 
 		uploadTask.on(
 			"state_changed",
@@ -113,16 +92,14 @@ function App() {
 						//Save link image in db of firebase
 						addDoc(collection(db, 'posts'),
 							{
-								// timestamp: Timestamp.now(),
+								timestamp: Timestamp.now(),
 								caption: caption,
 								imageUrl: url,
-								userName: username,
 								user_id: user.uid
 							})
 						setProgress(0);
 						setCaption('');
 						setImage(null);
-						console.log(url)
 					}
 				);
 			}
@@ -172,7 +149,25 @@ function App() {
 	//useEffect -> Runs a piece of code based on a specific condition.
 	useEffect(() => {
 		// this is where the code runs
-		getData();
+		const unsub = onSnapshot(
+			collection(db, 'posts'), 
+			(snapshot) => {
+				let postList = [];
+				snapshot.docs.forEach((doc) => {
+					postList.push({
+						id:doc.id,
+						post: doc.data()
+					})
+				})
+				setPosts(postList)
+			},
+			(error) => {
+				console.log(error)
+			}
+		);
+		return () => {
+			unsub()
+		}
 	}, []);
 
 	useEffect(() => {
