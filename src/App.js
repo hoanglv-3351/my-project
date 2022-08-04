@@ -6,7 +6,7 @@ import {
 	signInWithEmailAndPassword, storage, ref,
 	uploadBytesResumable, getDownloadURL
 } from './firebaseConfig'
-import { collection, getDocs, addDoc, Timestamp, doc, setDoc, onSnapshot } from 'firebase/firestore'
+import { collection, addDoc, Timestamp, doc, setDoc, onSnapshot } from 'firebase/firestore'
 import { makeStyles } from "@material-ui/core/styles";
 import Modal from "@mui/material/Modal";
 import { Button, Input } from '@mui/material';

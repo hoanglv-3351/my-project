@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { db } from '../../firebaseConfig'
-// import firebase from 'firebase/compat/app'
-// import { AVATAR } from '../../ImageList'
 import Avatar from "@mui/material/Avatar"
 import "./Style-PostItem.css"
-import { onSnapshot, doc, setDoc, addDoc, collection, getDoc, getDocs, deleteDoc, orderBy, query, Timestamp } from 'firebase/firestore';
+import { onSnapshot, updateDoc, doc, setDoc, addDoc, 
+        collection, getDoc, deleteDoc, Timestamp } from 'firebase/firestore';
 import { makeStyles } from "@material-ui/core/styles";
 import Modal from "@mui/material/Modal";
-import { Button, Menu, MenuItem } from '@mui/material';
+import { Button, Menu, MenuItem, Input } from '@mui/material';
 
 export default function PostItem(props) {
 
@@ -27,6 +26,7 @@ export default function PostItem(props) {
   const [author, setAuthor] = useState({})
 
   const [openModalFollowers, setOpenModalFollowers] = useState(false);
+  const [openModalChangeDesc, setOpenModalChangeDesc] = useState(false)
 
   function getModalStyle() {
     const top = 50;
@@ -55,7 +55,13 @@ export default function PostItem(props) {
 
   const { data } = props
 
+  const [caption, setCaption] = useState("")
+
   const [state, setState] = useState(false) // state like post
+
+  useEffect(() => {
+    setCaption(data.caption)
+  }, [props.postId])
 
   const submitComment = (e) => {
     // e.preventDefault();
@@ -82,9 +88,6 @@ export default function PostItem(props) {
 
   // get followers
   useEffect(async () => {
-    const postsCol = collection(db, `posts/${props.postId}/followers`)
-    const snapshot = await getDocs(postsCol);
-
     //check if liked post
     let docRef = doc(db, `posts/${props.postId}/followers`, props.user.uid)
 
@@ -95,33 +98,23 @@ export default function PostItem(props) {
       }
     })
 
-    // snapshot.docs.map((res) => {
-      // let resRef = doc(db, "users", res.data().user_id)
-      // getDoc(resRef).then((resSnap) => {
-      //   if (resSnap.exists()) {
-      //     setFollowers(followers => [...followers, resSnap.data()])
-      //   }
-      // })
-    // })
-
     const unsub = onSnapshot(
-			collection(db, `posts/${props.postId}/followers`), 
-			(snapshot) => {
-				snapshot.docs.forEach((snapDoc) => {
-					
+      collection(db, `posts/${props.postId}/followers`),
+      (snapshot) => {
+        snapshot.docs.forEach((snapDoc) => {
           let resRef = doc(db, "users", snapDoc.data().user_id)
           getDoc(resRef).then((resSnap) => {
             if (resSnap.exists()) {
               setFollowers(followers => [...followers, resSnap.data()])
             }
-      })
-				})
-				setFollowers(followers)
-			},
-			(error) => {
-				console.log(error)
-			}
-		);
+          })
+        })
+        setFollowers(followers)
+      },
+      (error) => {
+        console.log(error)
+      }
+    );
     return () => {
       unsub()
     }
@@ -130,21 +123,21 @@ export default function PostItem(props) {
   // get comment
   useEffect(() => {
     const unsub = onSnapshot(
-			collection(db, `posts/${props.postId}/comments`), 
-			(snapshot) => {
-				let commentList = [];
-				snapshot.docs.forEach((doc) => {
-					commentList.push({
-						id:doc.id,
-						cmt: doc.data()
-					})
-				})
-				setComments(commentList)
-			},
-			(error) => {
-				console.log(error)
-			}
-		);
+      collection(db, `posts/${props.postId}/comments`),
+      (snapshot) => {
+        let commentList = [];
+        snapshot.docs.forEach((doc) => {
+          commentList.push({
+            id: doc.id,
+            cmt: doc.data()
+          })
+        })
+        setComments(commentList)
+      },
+      (error) => {
+        console.log(error)
+      }
+    );
     return () => {
       unsub()
     }
@@ -173,7 +166,7 @@ export default function PostItem(props) {
 
   const handleShowFollowers = () => {
     setOpenModalFollowers(true)
-    // console.log(data.timestamp.toDate().toDateString())
+    console.log(data.timestamp.toDate().toDateString())
   }
 
   const handleClickDeletePost = () => {
@@ -187,6 +180,18 @@ export default function PostItem(props) {
   const handleDeletePost = (postId) => {
     deleteDoc(doc(db, "posts", postId));
     alert('Đã xoá bài viết!')
+  }
+
+  const handleClickChangeDesc = () => {
+    handleClose();
+    setOpenModalChangeDesc(true);
+  }
+
+  const handleChangeDesc = () => {
+    updateDoc(doc(db, "posts", props.postId), {
+      caption: caption
+    })
+    setOpenModalChangeDesc(false)
   }
 
   return (
@@ -226,8 +231,8 @@ export default function PostItem(props) {
                 }}
               >
                 <MenuItem onClick={handleClickDeletePost}>Xoá</MenuItem>
+                <MenuItem onClick={handleClickChangeDesc}>Chỉnh sửa mô tả</MenuItem>
                 <MenuItem onClick={handleClose}>Chỉnh sửa quyền riêng tư</MenuItem>
-                {/* <MenuItem onClick={handleClose}></MenuItem> */}
               </Menu>
             </span>
           </div>
@@ -275,8 +280,7 @@ export default function PostItem(props) {
             <span dangerouslySetInnerHTML={{ __html: data.caption }} className="caption"></span>
           </div>
           {/* Time */}
-          <p className="post__caption--time"><span>1</span> Ngày trước</p>
-          {/* <p className="post__caption--time"><span>{data.timestamp.toDate().toDateString()}</span></p> */}
+          <p className="post__caption--time"><span>{data.timestamp.toDate().toDateString()}</span></p>
 
         </div>
 
@@ -288,6 +292,8 @@ export default function PostItem(props) {
               <span className='comment'>
                 {cmt.comment}
               </span>
+              <p className="post__caption--time"><span>{cmt.timestamp.toDate().toDateString()}</span></p>
+
             </p>
           ))}
         </div>
@@ -333,7 +339,26 @@ export default function PostItem(props) {
 
         </div>
       </Modal>
-
+      
+      {/* Modal Change description */}
+      <Modal open={openModalChangeDesc} onClose={() => setOpenModalChangeDesc(false)}>
+				<div style={modalStyle} className={classes.paper}>
+					<form className="form__signup">
+						<div className="form__group">
+							<Input
+								className="form__field"
+								placeholder="Enter a caption"
+								type="text"
+								value={caption}
+								onChange={(e) => setCaption(e.target.value)}
+							/>
+						</div>
+						<Button className="btn-signup" onClick={handleChangeDesc}>
+							Change
+						</Button>
+					</form>
+				</div>
+			</Modal>
     </div>
   )
 }
